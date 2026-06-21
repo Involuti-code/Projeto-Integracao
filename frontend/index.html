@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-commerce Distribuído — Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1>E-commerce Distribuído</h1>
+          <p>Painel de demonstração</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-panel="pedido">Criar pedido</button>
+        <button class="nav-btn" data-panel="estoque">Consultar estoque</button>
+        <button class="nav-btn" data-panel="circuit-breaker">Circuit Breaker</button>
+        <button class="nav-btn" data-panel="cenarios">Cenários rápidos</button>
+        <button class="nav-btn" data-panel="logs-servicos">Logs dos serviços</button>
+      </nav>
+
+      <div class="sidebar-links">
+        <a href="http://localhost:15672" target="_blank" rel="noopener">RabbitMQ Management ↗</a>
+        <a href="http://localhost:8000/docs" target="_blank" rel="noopener">Swagger Checkout ↗</a>
+        <a href="http://localhost:8001/docs" target="_blank" rel="noopener">Swagger Estoque ↗</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="status-pills" id="status-pills">
+          <span class="pill pill-loading">Verificando serviços…</span>
+        </div>
+      </header>
+
+      <section class="panel active" id="panel-pedido">
+        <div class="panel-header">
+          <h2>Criar pedido</h2>
+          <p>Fluxo completo: verificação síncrona de estoque → publicação do evento <code>PedidoCriado</code> no RabbitMQ.</p>
+        </div>
+
+        <form id="form-pedido" class="card">
+          <div class="form-row">
+            <label>
+              ID do pedido
+              <input type="text" id="id-pedido" required placeholder="pedido-001">
+            </label>
+            <label>
+              E-mail do cliente
+              <input type="email" id="cliente" value="maria@email.com" required>
+            </label>
+          </div>
+
+          <fieldset class="itens-fieldset">
+            <legend>Itens do pedido</legend>
+            <div id="itens-container"></div>
+            <button type="button" class="btn btn-ghost" id="btn-add-item">+ Adicionar item</button>
+          </fieldset>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Enviar pedido</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" id="panel-estoque">
+        <div class="panel-header">
+          <h2>Consultar estoque</h2>
+          <p>Chamada REST síncrona ao serviço de Estoque (Marco 1).</p>
+        </div>
+
+        <form id="form-estoque" class="card">
+          <div class="form-row">
+            <label>
+              Produto
+              <select id="estoque-produto" required></select>
+            </label>
+            <label>
+              Quantidade
+              <input type="number" id="estoque-quantidade" min="1" value="1" required>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Verificar disponibilidade</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" id="panel-circuit-breaker">
+        <div class="panel-header">
+          <h2>Circuit Breaker</h2>
+          <p>Simule a queda do Estoque e observe o Checkout bloquear chamadas após 3 falhas consecutivas.</p>
+        </div>
+
+        <div class="card-grid">
+          <div class="card">
+            <h3>Falha simulada no Estoque</h3>
+            <p>Ative para o serviço de Estoque retornar erro 503 em todas as requisições.</p>
+            <div class="toggle-group">
+              <button type="button" class="btn btn-danger" id="btn-falha-on">Ativar falha</button>
+              <button type="button" class="btn btn-ghost" id="btn-falha-off">Desativar falha</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Status do Circuit Breaker</h3>
+            <p>Estado atual da proteção entre Checkout e Estoque.</p>
+            <button type="button" class="btn btn-secondary" id="btn-cb-status">Atualizar status</button>
+            <div id="cb-status" class="info-box muted">Clique em "Atualizar status" para consultar.</div>
+          </div>
+        </div>
+
+        <div class="card hint-card">
+          <h3>Como demonstrar</h3>
+          <ol>
+            <li>Ative a falha simulada no Estoque.</li>
+            <li>Envie 3 pedidos válidos (use Cenários rápidos ou Criar pedido).</li>
+            <li>A partir da 3ª falha, o Circuit Breaker abre e o Checkout retorna <strong>503</strong> imediatamente.</li>
+            <li>Desative a falha e aguarde 30s para recuperação automática.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-cenarios">
+        <div class="panel-header">
+          <h2>Cenários rápidos</h2>
+          <p>Pré-configurações para a apresentação — um clique preenche e envia o pedido.</p>
+        </div>
+
+        <div class="scenario-grid">
+          <article class="scenario-card" data-scenario="sucesso">
+            <span class="scenario-tag success">Sucesso</span>
+            <h3>Pedido aprovado</h3>
+            <p>Produtos com estoque suficiente. Dispara pagamento e notificação via RabbitMQ.</p>
+            <button type="button" class="btn btn-primary btn-scenario">Executar cenário</button>
+          </article>
+
+          <article class="scenario-card" data-scenario="insuficiente">
+            <span class="scenario-tag warning">409 Conflict</span>
+            <h3>Estoque insuficiente</h3>
+            <p>Solicita 999 unidades do produto B (estoque: 5).</p>
+            <button type="button" class="btn btn-primary btn-scenario">Executar cenário</button>
+          </article>
+
+          <article class="scenario-card" data-scenario="zerado">
+            <span class="scenario-tag warning">409 Conflict</span>
+            <h3>Produto sem estoque</h3>
+            <p>Tenta comprar produto C, que tem estoque zero.</p>
+            <button type="button" class="btn btn-primary btn-scenario">Executar cenário</button>
+          </article>
+
+          <article class="scenario-card" data-scenario="invalido">
+            <span class="scenario-tag danger">400 Bad Request</span>
+            <h3>Produto inexistente</h3>
+            <p>Referencia um produto que não existe no catálogo.</p>
+            <button type="button" class="btn btn-primary btn-scenario">Executar cenário</button>
+          </article>
+        </div>
+
+        <div class="card hint-card">
+          <h3>Dead Letter Queue (DLQ)</h3>
+          <p>Para demonstrar a DLQ na Notificação, altere no <code>docker-compose.yml</code>:</p>
+          <pre><code>notificacao:
+  environment:
+    SIMULAR_FALHA: "true"</code></pre>
+          <p>Reinicie com <code>docker compose up --build notificacao</code>, envie um pedido e verifique a fila <code>notificacao.dlq</code> no RabbitMQ Management.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-logs-servicos">
+        <div class="panel-header">
+          <h2>Logs dos serviços</h2>
+          <p>Atividade em tempo real dos consumidores assíncronos (Pagamento e Notificação) e dos serviços REST — equivalente ao <code>docker compose logs -f</code>.</p>
+        </div>
+
+        <div class="card logs-toolbar">
+          <div class="logs-toolbar-row">
+            <div class="filter-chips" id="log-filter-chips">
+              <button type="button" class="chip active" data-filter="todos">Todos</button>
+              <button type="button" class="chip" data-filter="checkout">Checkout</button>
+              <button type="button" class="chip" data-filter="estoque">Estoque</button>
+              <button type="button" class="chip" data-filter="pagamento">Pagamento</button>
+              <button type="button" class="chip" data-filter="notificacao">Notificação</button>
+            </div>
+            <div class="logs-actions">
+              <label class="toggle-label">
+                <input type="checkbox" id="logs-autoscroll" checked>
+                Auto-scroll
+              </label>
+              <span class="sse-status" id="sse-status">Conectando…</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-clear-service-logs">Limpar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="service-logs" class="service-logs">
+          <p class="log-placeholder">Aguardando eventos dos serviços… Envie um pedido para ver a atividade.</p>
+        </div>
+      </section>
+
+      <section class="log-section">
+        <div class="log-header">
+          <h2>Resposta da API</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-clear-log">Limpar</button>
+        </div>
+        <div id="log-output" class="log-output">
+          <p class="log-placeholder">As respostas das requisições aparecerão aqui.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="item-row-template">
+    <div class="item-row">
+      <label>
+        Produto
+        <select class="item-produto" required></select>
+      </label>
+      <label>
+        Quantidade
+        <input type="number" class="item-quantidade" min="1" value="1" required>
+      </label>
+      <button type="button" class="btn btn-icon btn-remove-item" title="Remover item">×</button>
+    </div>
+  </template>
+
+  <script src="js/app.js?v=2"></script>
+</body>
+</html>

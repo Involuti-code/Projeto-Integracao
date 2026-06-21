@@ -1,0 +1,81 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  estoque:
+    build:
+      context: .
+      dockerfile: estoque/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      SIMULAR_FALHA: "false"
+
+  checkout:
+    build:
+      context: .
+      dockerfile: checkout/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      estoque:
+        condition: service_started
+    environment:
+      ESTOQUE_BASE_URL: http://estoque:8001
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      CB_FAILURE_THRESHOLD: "3"
+      CB_RECOVERY_TIMEOUT: "30"
+
+  pagamento:
+    build:
+      context: .
+      dockerfile: pagamento/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      TAXA_FALHA: "0.3"
+
+  notificacao:
+    build:
+      context: .
+      dockerfile: notificacao/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      MAX_RETRIES: "3"
+      SIMULAR_FALHA: "false"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - checkout
+      - estoque
+      - monitor
+
+  monitor:
+    build:
+      context: .
+      dockerfile: monitor/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/

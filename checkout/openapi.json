@@ -1,0 +1,202 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Checkout API",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/pedidos": {
+      "post": {
+        "summary": "Criar pedido",
+        "description": "Recebe uma requisicao de compra, verifica o estoque de forma sincrona (com Circuit Breaker) e publica o evento PedidoCriado no RabbitMQ.",
+        "operationId": "criar_pedido_pedidos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pedido"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/circuit-breaker": {
+      "get": {
+        "summary": "Status do Circuit Breaker",
+        "operationId": "circuit_breaker_status_health_circuit_breaker_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Status do servico de checkout",
+        "operationId": "status__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ItemPedido": {
+        "properties": {
+          "produto_id": {
+            "type": "string",
+            "title": "Produto Id"
+          },
+          "quantidade": {
+            "type": "integer",
+            "title": "Quantidade"
+          }
+        },
+        "type": "object",
+        "required": [
+          "produto_id",
+          "quantidade"
+        ],
+        "title": "ItemPedido"
+      },
+      "Pedido": {
+        "properties": {
+          "id_pedido": {
+            "type": "string",
+            "title": "Id Pedido"
+          },
+          "cliente": {
+            "type": "string",
+            "title": "Cliente",
+            "default": "cliente@email.com"
+          },
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/ItemPedido"
+            },
+            "type": "array",
+            "title": "Itens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_pedido",
+          "itens"
+        ],
+        "title": "Pedido"
+      },
+      "PedidoResponse": {
+        "properties": {
+          "id_pedido": {
+            "type": "string",
+            "title": "Id Pedido"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "valor_total": {
+            "type": "number",
+            "title": "Valor Total"
+          },
+          "mensagem": {
+            "type": "string",
+            "title": "Mensagem"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_pedido",
+          "status",
+          "valor_total",
+          "mensagem"
+        ],
+        "title": "PedidoResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
