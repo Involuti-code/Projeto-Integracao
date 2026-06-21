@@ -20,6 +20,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+// ESTOQUE COMECO
+
 ESTOQUE_BASE_URL = os.getenv("ESTOQUE_BASE_URL", "http://localhost:8001")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 
