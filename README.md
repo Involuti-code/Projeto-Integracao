@@ -213,14 +213,6 @@ Swagger UI em execucao:
 - **Estoque em memoria**: foco na integracao, nao em persistencia.
 - **Pagamento com falha aleatoria**: simula comportamento real de gateways de pagamento.
 
-## Roteiro de apresentacao (5-10 min)
-
-1. **Arquitetura** (1 min): mostrar o diagrama e explicar os 4 servicos + RabbitMQ.
-2. **Marco 1** (2 min): demonstrar `POST /pedidos` e a consulta sincrona ao estoque.
-3. **Marco 2** (3 min): mostrar logs de Pagamento e Notificacao consumindo o evento.
-4. **Circuit Breaker** (2 min): ativar falha no estoque, mostrar `503` e endpoint `/health/circuit-breaker`.
-5. **DLQ** (2 min): ativar `SIMULAR_FALHA` na notificacao e mostrar mensagem na fila DLQ no RabbitMQ Management.
-
 ## Produtos e precos de referencia
 
 | Produto | Estoque | Preco (R$) |
